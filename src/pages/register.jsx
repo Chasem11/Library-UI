@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import api from "../services/api";
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -16,21 +16,59 @@ const Register = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
+    // Fetch CSRF token on component mount
+    useEffect(() => {
+        api.get("/sanctum/csrf-cookie").then(() => {
+            console.log("CSRF token fetched successfully");
+        }).catch(err => console.error("Error fetching CSRF token:", err));
+    }, []);
+
+    // Handle input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    // Handle registration form submission
     const handleRegister = async (e) => {
         e.preventDefault();
+
+        // Clean data to avoid sending unnecessary fields
+        const cleanedData = {
+            ...formData,
+            grade_level: formData.user_type === "student" ? formData.grade_level : null,
+            department: formData.user_type === "teacher" ? formData.department : null,
+        };
+
         try {
-            const response = await axios.post("/createUser", formData);
+            const response = await api.post("/createUser", cleanedData);
             if (response.status === 200) {
                 setSuccess("Registration successful! You can now log in.");
                 setError("");
+                setFormData({
+                    first_name: "",
+                    last_name: "",
+                    email: "",
+                    user_type: "",
+                    grade_level: "",
+                    department: "",
+                    gender: "",
+                    password: "",
+                    password_confirmation: "",
+                });
             }
         } catch (err) {
-            setError("Registration failed. Please check your input.");
+            if (err.response?.status === 422) {
+                const errors = err.response.data.errors;
+                setError(
+                    Object.values(errors)
+                        .flat()
+                        .join(". ")
+                );
+            } else {
+                setError(err.response?.data?.message || "Registration failed. Please check your input.");
+            }
+            setSuccess("");
         }
     };
 
@@ -121,7 +159,7 @@ const Register = () => {
                                     </div>
                                 </div>
 
-                                {/* Grade Level */}
+                                {/* Conditional Fields */}
                                 {formData.user_type === "student" && (
                                     <div className="mb-3 row">
                                         <label htmlFor="grade_level" className="col-md-4 col-form-label text-md-end">
@@ -146,7 +184,6 @@ const Register = () => {
                                     </div>
                                 )}
 
-                                {/* Department */}
                                 {formData.user_type === "teacher" && (
                                     <div className="mb-3 row">
                                         <label htmlFor="department" className="col-md-4 col-form-label text-md-end">
@@ -223,6 +260,7 @@ const Register = () => {
                                     </div>
                                 </div>
 
+                                {/* Submit Button */}
                                 <div className="row mb-0">
                                     <div className="col-md-6 offset-md-4">
                                         <button type="submit" className="btn btn-primary w-100">
@@ -245,3 +283,4 @@ const Register = () => {
 };
 
 export default Register;
+

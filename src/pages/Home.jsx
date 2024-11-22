@@ -1,10 +1,16 @@
 import React from "react";
+import Navbar from "../components/Navbar";
 
-const Home = () => {
+const Home = ({ onLogout }) => {
   return (
-    <div className="container mt-5">
-      <h1>Welcome to the Media Library</h1>
-      <p>Browse our collection of books and movies, rent items, or interact with our chatbot!</p>
+    <div>
+      <Navbar onLogout={onLogout} />
+      <div className="container mt-5">
+          <h1>Welcome to the Dashboard!</h1>
+          <button className="btn btn-danger mt-3" onClick={onLogout}>
+              Logout
+          </button>
+      </div>
     </div>
   );
 };
